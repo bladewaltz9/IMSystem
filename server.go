@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"sync"
 )
@@ -42,8 +43,8 @@ func (server *Server) ListenMessage() {
 }
 
 // broadcast user login message
-func (server *Server) BroadcastUserLogin(user *User, msg string) {
-	sendMsg := "[" + user.Addr + "] " + user.Name + " " + msg
+func (server *Server) Broadcast(user *User, msg string) {
+	sendMsg := "[" + user.Addr + "] " + user.Name + ": " + msg
 
 	server.Message <- sendMsg
 }
@@ -52,13 +53,37 @@ func (server *Server) Handler(conn net.Conn) {
 	user := NewUser(conn)
 
 	// broadcast user login message
-	server.BroadcastUserLogin(user, "已上线")
+	server.Broadcast(user, "已上线")
 
 	// time.Sleep(1 * time.Second)
 	// add new user to onlineMap
 	server.mapLock.Lock()
 	server.OnlineMap[user.Name] = user
 	server.mapLock.Unlock()
+
+	// receive message sent by user
+	go func() {
+		sendBuf := make([]byte, 4096)
+
+		for {
+			// read the message sent by user
+			n, err := conn.Read(sendBuf)
+			if n == 0 {
+				server.Broadcast(user, "已下线")
+				return
+			}
+
+			if err != nil && err != io.EOF {
+				fmt.Println("Connect read err: ", err)
+				return
+			}
+
+			// remove the last '\n'
+			msg := string(sendBuf[:n-1])
+			// broadcast message sent by user
+			server.Broadcast(user, msg)
+		}
+	}()
 
 	// block
 	select {}
