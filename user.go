@@ -49,10 +49,23 @@ func (user *User) Offline() {
 	user.server.Broadcast(user, "已下线")
 }
 
+// send message to user
+func (user *User) SendMessage(msg string) {
+	user.conn.Write([]byte(msg))
+}
+
 // Handle user's Message
 func (user *User) HandleMessage(msg string) {
-	// broadcast message sent by user
-	user.server.Broadcast(user, msg)
+
+	if msg == "who" {
+		// send online user list to the user
+		OnlineUserList := user.server.GetOnlineUserList()
+		user.SendMessage(OnlineUserList)
+	} else {
+		// broadcast message sent by user
+		user.server.Broadcast(user, msg)
+	}
+
 }
 
 // send msg to user if there is data in user's channel

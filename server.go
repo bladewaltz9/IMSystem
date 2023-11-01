@@ -82,6 +82,17 @@ func (server *Server) Handler(conn net.Conn) {
 	select {}
 }
 
+// get the list of online user
+func (server *Server) GetOnlineUserList() string {
+	var OnlineUserList string
+	server.mapLock.Lock()
+	for _, user := range server.OnlineMap {
+		OnlineUserList += "[" + user.Addr + "]" + user.Name + "\n"
+	}
+	server.mapLock.Unlock()
+	return OnlineUserList
+}
+
 // start server
 func (server *Server) Start() {
 	// Socket listen
