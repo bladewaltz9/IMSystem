@@ -56,16 +56,37 @@ func (user *User) SendMessage(msg string) {
 
 // Handle user's Message
 func (user *User) HandleMessage(msg string) {
-
 	if msg == "who" {
 		// send online user list to the user
 		OnlineUserList := user.server.GetOnlineUserList()
 		user.SendMessage(OnlineUserList)
+	} else if len(msg) > 7 && msg[0:6] == "rename" {
+		user.Rename(msg[7:])
 	} else {
 		// broadcast message sent by user
 		user.server.Broadcast(user, msg)
 	}
 
+}
+
+// rename user
+func (user *User) Rename(name string) bool {
+	// check if the username already exists
+	if _, value := user.server.OnlineMap[name]; value {
+		user.SendMessage("用户名已存在！\n")
+		return false
+	} else {
+		// delete old map
+		user.server.mapLock.Lock()
+		delete(user.server.OnlineMap, user.Name)
+		user.server.mapLock.Unlock()
+
+		// add new map
+		user.server.OnlineMap[name] = user
+		user.Name = name
+		user.SendMessage("用户名已改为 " + user.Name + "\n")
+		return true
+	}
 }
 
 // send msg to user if there is data in user's channel

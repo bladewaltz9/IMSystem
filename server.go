@@ -87,7 +87,7 @@ func (server *Server) GetOnlineUserList() string {
 	var OnlineUserList string
 	server.mapLock.Lock()
 	for _, user := range server.OnlineMap {
-		OnlineUserList += "[" + user.Addr + "]" + user.Name + "\n"
+		OnlineUserList += "[" + user.Addr + "] " + user.Name + "\n"
 	}
 	server.mapLock.Unlock()
 	return OnlineUserList
