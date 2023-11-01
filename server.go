@@ -50,16 +50,9 @@ func (server *Server) Broadcast(user *User, msg string) {
 }
 
 func (server *Server) Handler(conn net.Conn) {
-	user := NewUser(conn)
+	user := NewUser(conn, server)
 
-	// broadcast user login message
-	server.Broadcast(user, "已上线")
-
-	// time.Sleep(1 * time.Second)
-	// add new user to onlineMap
-	server.mapLock.Lock()
-	server.OnlineMap[user.Name] = user
-	server.mapLock.Unlock()
+	user.Online()
 
 	// receive message sent by user
 	go func() {
@@ -69,7 +62,7 @@ func (server *Server) Handler(conn net.Conn) {
 			// read the message sent by user
 			n, err := conn.Read(sendBuf)
 			if n == 0 {
-				server.Broadcast(user, "已下线")
+				user.Offline()
 				return
 			}
 
@@ -80,8 +73,8 @@ func (server *Server) Handler(conn net.Conn) {
 
 			// remove the last '\n'
 			msg := string(sendBuf[:n-1])
-			// broadcast message sent by user
-			server.Broadcast(user, msg)
+
+			user.HandleMessage(msg)
 		}
 	}()
 
