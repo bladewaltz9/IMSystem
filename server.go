@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	DURATION = 10 * time.Second
+	DURATION = 60 * time.Second
 )
 
 type Server struct {

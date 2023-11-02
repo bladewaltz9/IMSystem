@@ -2,6 +2,7 @@ package main
 
 import (
 	"net"
+	"strings"
 )
 
 type User struct {
@@ -62,8 +63,28 @@ func (user *User) HandleMessage(msg string) {
 		// send online user list to the user
 		OnlineUserList := user.server.GetOnlineUserList()
 		user.SendMessage(OnlineUserList)
-	} else if len(msg) > 7 && msg[0:7] == "rename|" {
+	} else if len(msg) > 7 && msg[:7] == "rename|" {
 		user.Rename(msg[7:])
+	} else if len(msg) > 3 && msg[:3] == "to|" {
+		msgList := strings.Split(msg, "|")
+		if len(msgList) != 3 || len(msgList[1]) == 0 {
+			user.SendMessage("格式错误！Usage: to|<username>|<message>\n")
+			return
+		} else if len(msgList[2]) == 0 {
+			user.SendMessage("发送内容不能为空！\n")
+			return
+		}
+
+		name, content := msgList[1], msgList[2]
+		// get user by name and check if it's exists.
+		remoteUser, ok := user.server.OnlineMap[name]
+		if !ok {
+			user.SendMessage("用户名不存在！\n")
+			return
+		}
+
+		// send content to remote user
+		remoteUser.SendMessage("[from " + user.Name + "]: " + content + "\n")
 	} else {
 		// broadcast message sent by user
 		user.server.Broadcast(user, msg)
