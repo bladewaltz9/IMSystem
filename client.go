@@ -1,18 +1,19 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net"
 )
 
 type Client struct {
 	ServerIP   string
-	ServerPort uint16
+	ServerPort int
 	Name       string
 	conn       net.Conn
 }
 
-func NewClient(serverIP string, serverPort uint16) *Client {
+func NewClient(serverIP string, serverPort int) *Client {
 	// create client object
 	client := &Client{
 		ServerIP:   serverIP,
@@ -30,8 +31,18 @@ func NewClient(serverIP string, serverPort uint16) *Client {
 	return client
 }
 
+var serverIP string
+var serverPort int
+
+func init() {
+	flag.StringVar(&serverIP, "ip", "127.0.0.1", "set server ip(default: 127.0.0.1)")
+	flag.IntVar(&serverPort, "port", 8888, "set server port(default: 8888)")
+}
+
 func main() {
-	client := NewClient("127.0.0.1", 8888)
+	flag.Parse()
+
+	client := NewClient(serverIP, serverPort)
 	if client == nil {
 		fmt.Println(">>>> connect failed")
 		return
