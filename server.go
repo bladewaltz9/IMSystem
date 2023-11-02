@@ -5,6 +5,11 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
+)
+
+const (
+	DURATION = 10 * time.Second
 )
 
 type Server struct {
@@ -36,7 +41,7 @@ func (server *Server) ListenMessage() {
 		// send msg to every online user
 		server.mapLock.Lock()
 		for _, user := range server.OnlineMap {
-			user.Channel <- msg
+			user.C <- msg
 		}
 		server.mapLock.Unlock()
 	}
@@ -53,6 +58,11 @@ func (server *Server) Handler(conn net.Conn) {
 	user := NewUser(conn, server)
 
 	user.Online()
+
+	// check if user connection is alive
+	isALive := make(chan bool)
+	// create a timer
+	timer := time.NewTimer(DURATION)
 
 	// receive message sent by user
 	go func() {
@@ -71,6 +81,8 @@ func (server *Server) Handler(conn net.Conn) {
 				return
 			}
 
+			isALive <- true
+
 			// remove the last '\n'
 			msg := string(sendBuf[:n-1])
 
@@ -78,8 +90,19 @@ func (server *Server) Handler(conn net.Conn) {
 		}
 	}()
 
-	// block
-	select {}
+	for {
+		select {
+		case <-isALive: // user has sent message, reset timer
+			timer.Reset(DURATION)
+		case <-timer.C: // user is overtime, close connection
+			timer.Stop()
+			user.SendMessage("长时间未活跃，正在断开连接...\n")
+			// close connection
+			conn.Close()
+
+			return
+		}
+	}
 }
 
 // get the list of online user

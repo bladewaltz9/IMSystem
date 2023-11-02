@@ -1,24 +1,26 @@
 package main
 
-import "net"
+import (
+	"net"
+)
 
 type User struct {
 	Name string
 	Addr string
 
-	Channel chan string
-	conn    net.Conn
-	server  *Server
+	C      chan string
+	conn   net.Conn
+	server *Server
 }
 
 // create a new user
 func NewUser(conn net.Conn, server *Server) *User {
 	user := &User{
-		Name:    conn.RemoteAddr().String(),
-		Addr:    conn.RemoteAddr().String(),
-		Channel: make(chan string),
-		conn:    conn,
-		server:  server,
+		Name:   conn.RemoteAddr().String(),
+		Addr:   conn.RemoteAddr().String(),
+		C:      make(chan string),
+		conn:   conn,
+		server: server,
 	}
 
 	// start to listen user message
@@ -60,7 +62,7 @@ func (user *User) HandleMessage(msg string) {
 		// send online user list to the user
 		OnlineUserList := user.server.GetOnlineUserList()
 		user.SendMessage(OnlineUserList)
-	} else if len(msg) > 7 && msg[0:6] == "rename" {
+	} else if len(msg) > 7 && msg[0:7] == "rename|" {
 		user.Rename(msg[7:])
 	} else {
 		// broadcast message sent by user
@@ -92,7 +94,7 @@ func (user *User) Rename(name string) bool {
 // send msg to user if there is data in user's channel
 func (user *User) ListenMessage() {
 	for {
-		msg := <-user.Channel
+		msg := <-user.C
 
 		user.conn.Write([]byte(msg + "\n"))
 	}
